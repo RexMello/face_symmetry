@@ -1,35 +1,181 @@
 import cv2
 import mediapipe as mp
 import numpy as np
-
+import math
 
 class face_summetry():
     def __init__(self):
         # Face Mesh
         mp_face_mesh = mp.solutions.face_mesh
         self.face_mesh = mp_face_mesh.FaceMesh(static_image_mode = True)
-
+        self.image_captured = False
+        self.captured_image = ''
+        self.display_text = ''
+  
     def draw_face_landmarks(self,img):
         # Facial landmarks
         results = self.face_mesh.process(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+
+        horizontal_pts = []
+        horizontal_pts_eyes = []
+        vertical_pts = []
+
+        left_lip_sym = []
+        right_lip_sym = []
+        left_eye_sym = []
+        right_eye_sym = []
+
 
 
         if not results.multi_face_landmarks == None:
             landmarks = results.multi_face_landmarks[0]
 
-            for landmark in landmarks.landmark:
-                x = landmark.x
-                y = landmark.y
+            
+            h,w,_ = img.shape
+
+            for idx, landmark in enumerate(landmarks.landmark):
+
+                if idx == 13:
+                    x = landmark.x
+                    y = landmark.y
+                    
+                    relative_x = int(img.shape[1] * x)
+                    relative_y = int(img.shape[0] * y)
+
+                    img = cv2.line(img, (relative_x,0), (relative_x,h), (0,0,0), 1)
+                    img = cv2.line(img, (0,relative_y), (w,relative_y), (0,0,0), 1)
+
+                    for pts in range(0,w,5):
+                        horizontal_pts.append((pts,relative_y))
+
+                    for pts in range(0,h,5):
+                        vertical_pts.append((relative_x,pts))
+             
+                if idx == 466:
+                    x = landmark.x
+                    y = landmark.y
+                    
+                    relative_x = int(img.shape[1] * x)
+                    relative_y = int(img.shape[0] * y)
+
+                    img = cv2.line(img, (0,relative_y), (w,relative_y), (0,0,0), 1)
+
+                    for pts in range(0,w,5):
+                        horizontal_pts_eyes.append((pts,relative_y))
+
+
+            for idx, landmark in enumerate(landmarks.landmark):
                 
-                relative_x = int(img.shape[1] * x)
-                relative_y = int(img.shape[0] * y)
+                #Left lip
+                if idx == 308:
+                    x = landmark.x
+                    y = landmark.y
+                    
+                    relative_x = int(img.shape[1] * x)
+                    relative_y = int(img.shape[0] * y)
+
+
+                    for h_points in horizontal_pts:
+                        left_lip_sym.append(math.hypot(h_points[0] - relative_x, h_points[1] - relative_y))
+                        
+
+                    img = cv2.circle(img, (relative_x,relative_y), 5, (0,0,255), 2)
+
+                #Right lip
+                if idx == 61:
+                    x = landmark.x
+                    y = landmark.y
+                    
+                    relative_x = int(img.shape[1] * x)
+                    relative_y = int(img.shape[0] * y)
+
+
+                    for h_points in horizontal_pts:
+                        right_lip_sym.append(math.hypot(h_points[0] - relative_x, h_points[1] - relative_y))
+
+                    img = cv2.circle(img, (relative_x,relative_y), 5, (0,0,255), 2)
                 
-                cv2.circle(img, (relative_x, relative_y),1, (0, 0, 255), 1)
+                #Right eye
+                if idx == 246:
+                    x = landmark.x
+                    y = landmark.y
+                    
+                    relative_x = int(img.shape[1] * x)
+                    relative_y = int(img.shape[0] * y)
+
+
+                    for h_points in horizontal_pts_eyes:
+                        right_eye_sym.append(math.hypot(h_points[0] - relative_x, h_points[1] - relative_y))
+
+                    img = cv2.circle(img, (relative_x,relative_y), 5, (0,0,255), 2)
+
+
+                #Left eye
+                if idx == 466:
+                    x = landmark.x
+                    y = landmark.y
+                    
+                    relative_x = int(img.shape[1] * x)
+                    relative_y = int(img.shape[0] * y)
+
+                    img = cv2.circle(img, (relative_x,relative_y), 5, (0,0,255), 2)
+
+                    for h_points in horizontal_pts_eyes:
+                        left_eye_sym.append(math.hypot(h_points[0] - relative_x, h_points[1] - relative_y))
+
+            count = 0
+
+            cv2.putText(img,'Asymmetries found:',(10,20),cv2.FONT_HERSHEY_PLAIN,1,(255,0,0),1)
+
+            if min(left_lip_sym) >5:
+                count+=1
+                cv2.putText(img,'Left lip',(10,40),cv2.FONT_HERSHEY_PLAIN,1,(255,0,0),1)
+
+
+            if min(right_lip_sym) >5:
+                if count == 0:
+                    cv2.putText(img,'Right lip',(10,40),cv2.FONT_HERSHEY_PLAIN,1,(255,0,0),1)
+                elif count == 1:
+                    cv2.putText(img,'Right lip',(10,60),cv2.FONT_HERSHEY_PLAIN,1,(255,0,0),1)
+                count+=1
+                
+            if min(left_eye_sym) >5:
+                if count == 0:
+                    cv2.putText(img,'Left eye',(10,40),cv2.FONT_HERSHEY_PLAIN,1,(255,0,0),1)
+                elif count == 1:
+                    cv2.putText(img,'Left eye',(10,60),cv2.FONT_HERSHEY_PLAIN,1,(255,0,0),1)
+                elif count == 2:
+                    cv2.putText(img,'Left eye',(10,80),cv2.FONT_HERSHEY_PLAIN,1,(255,0,0),1)
+                count += 1
+
+
+
+
+            if min(right_eye_sym) >5:
+                if count == 0:
+                    cv2.putText(img,'Right eye',(10,40),cv2.FONT_HERSHEY_PLAIN,1,(255,0,0),1)
+                if count == 1:
+                    cv2.putText(img,'Right eye',(10,60),cv2.FONT_HERSHEY_PLAIN,1,(255,0,0),1)                
+                if count == 2:
+                    cv2.putText(img,'Right eye',(10,80),cv2.FONT_HERSHEY_PLAIN,1,(255,0,0),1)
+                if count == 3:
+                    cv2.putText(img,'Right eye',(10,100),cv2.FONT_HERSHEY_PLAIN,1,(255,0,0),1)                
+
+
+
+
+
+            if min(left_lip_sym) <5 and min(right_eye_sym) <5 and min(left_eye_sym)<5 and min(right_lip_sym)<5:
+                cv2.putText(img,'None',(10,40),cv2.FONT_HERSHEY_PLAIN,1,(255,0,0),1)
+
+            
+
+            
+
 
         return img
 
     def head_tilt_detection(self,image):
-        head_moved = False
 
         image = cv2.cvtColor(cv2.flip(image, 1), cv2.COLOR_BGR2RGB)
 
@@ -45,7 +191,7 @@ class face_summetry():
         # Convert the color space from RGB to BGR
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
-        img_h, img_w, img_c = image.shape
+        img_h, img_w, _ = image.shape
         face_3d = []
         face_2d = []
 
@@ -94,16 +240,19 @@ class face_summetry():
             
 
                 # See where the user's head tilting
-                if x < -2 or x >2 or y>2 or y<-2:
+                if x < -3 or x >3 or y>3 or y<-3:
                     print('Head tilted')
-                    head_moved = True
+                    return True
                 
 
 
-        return head_moved
+        return False
+
+    def midpoint(self,p1, p2):
+        return (p1[0]+p2[0])/2, (p1[1]+p2[1])/2
 
     def main_loop(self):
-        cap = cv2.VideoCapture(0)
+        cap = cv2.VideoCapture(0,cv2.CAP_DSHOW)
 
         while True:
             ret, img = cap.read()
@@ -111,16 +260,34 @@ class face_summetry():
             if not ret:
                 print('=============Camera not found================')
                 break
+                
 
             if not self.head_tilt_detection(img):
-                self.draw_face_landmarks(img)
+                img = self.draw_face_landmarks(img)
 
-            else:
-                print('=========Keep the head straight========')
+                cv2.imwrite('test.jpg',img)
+
+                cv2.destroyAllWindows()
+                cv2.imshow('Final output',img)
+                cv2.waitKey()
+                cv2.destroyAllWindows()
+                
+                return
+            
+            cv2.putText(img,'Keep your head straight and smile',(10,20),cv2.FONT_HERSHEY_PLAIN,1,(255,0,0),1)
 
             cv2.imshow('Live feed',img)
             cv2.waitKey(10)
 
+    def main_loop_for_img(self,path):
+        
+        img = cv2.imread(path)
+        
+
+        self.draw_face_landmarks(img)
+
+        cv2.imshow('Live feed',img)
+        cv2.waitKey()
 
 
 objectt = face_summetry()
