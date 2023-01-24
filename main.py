@@ -92,7 +92,7 @@ class face_summetry():
 
 
                 #Lips
-                if idx == 308:
+                if idx == 61:
                     x = landmark.x
                     y = landmark.y
                     
@@ -329,11 +329,14 @@ class face_summetry():
         
         img = cv2.imread(path)
         
-
-        self.draw_face_landmarks(img)
+        # self.draw_face_landmarks(img)
+        
+        img = self.get_final_result(img)
 
         cv2.imshow('Live feed',img)
         cv2.waitKey()
+
+        cv2.imwrite('output.jpg',img)
 
 
 objectt = face_summetry()
